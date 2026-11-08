@@ -32,7 +32,7 @@ Learning topics with links: `docs/topics-to-learn.md`. Original: `docs/http-serv
 
 ## Project structure
 
-Projects live in `src/`, except `Common` at the repo root.
+All projects live in `src/`.
 
 - `Common`: shared helpers, e.g. `Assert` (`[Conditional("DEBUG")]`, calls are removed from Release builds).
 - `Stack`: buffers, checksum, `NetIf` contract, event loop, IPv4, ICMP, TCP, socket-like API. IP and TCP stay in one
