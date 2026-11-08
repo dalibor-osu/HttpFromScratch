@@ -1,6 +1,7 @@
 <Solution>
-    <Project Path="src/App/App.csproj"/>
-    <Project Path="src/Device.Linux/Device.Linux.csproj"/>
-    <Project Path="src/Http/Http.csproj"/>
-    <Project Path="src/Stack/Stack.csproj"/>
+    <Project Path="src/Common/Common.csproj" />
+    <Project Path="src/App/App.csproj" />
+    <Project Path="src/Device.Linux/Device.Linux.csproj" />
+    <Project Path="src/Http/Http.csproj" />
+    <Project Path="src/Stack/Stack.csproj" />
 </Solution>

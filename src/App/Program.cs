@@ -1,1 +1,3 @@
-﻿Console.WriteLine("Hello, World!");
+﻿using HttpFromScratch.Common.Assertion;
+
+Assert.That(1 == 1);

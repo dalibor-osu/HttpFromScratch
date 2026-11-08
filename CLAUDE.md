@@ -13,14 +13,15 @@ Learning topics with links: `docs/topics-to-learn.md`. Original: `docs/http-serv
 
 ## Current status
 
-- Phase 0, scaffold only (single .NET 10 console app, placeholder `Program.cs`). The project structure below is decided
-  but not created yet.
+- Phase 0. Projects from the structure below exist, mostly empty. `Common` has a debug-only `Assert`. The compile-time
+  device wiring in `App` is not set up yet.
 - Development is on Windows for now; the project is not yet set up for Linux. WSL2 with Arch Linux is ready, Rider still
   needs to be installed there. The developer will do that later.
 
 ## Key decisions
 
-- **C# (.NET 10)**, written simply enough that a later port to C is mostly mechanical.
+- **C# (.NET 11, C# 15)**, written simply enough that a later port to C is mostly mechanical.
+- **Always publishable as Native AOT.**
 - **Boundary is a TUN device**: the kernel hands raw IP packets to a fd; the project implements IPv4, ICMP, TCP, HTTP.
   TAP (Ethernet + ARP) is an optional later step.
 - **Linux only for now, built with cross-platform in mind** (run in WSL2). A Windows backend (Wintun) may come later;
@@ -31,6 +32,9 @@ Learning topics with links: `docs/topics-to-learn.md`. Original: `docs/http-serv
 
 ## Project structure
 
+Projects live in `src/`, except `Common` at the repo root.
+
+- `Common`: shared helpers, e.g. `Assert` (`[Conditional("DEBUG")]`, calls are removed from Release builds).
 - `Stack`: buffers, checksum, `NetIf` contract, event loop, IPv4, ICMP, TCP, socket-like API. IP and TCP stay in one
   project (folders) because they depend on each other (protocol dispatch, sending, pseudo-header).
 - `Http`: depends only on the socket-like API.
@@ -38,6 +42,15 @@ Learning topics with links: `docs/topics-to-learn.md`. Original: `docs/http-serv
 - `App` (exe): wires everything. The device is chosen at compile time: conditional `ProjectReference` with
   `$([MSBuild]::IsOSPlatform('Linux'))` plus a `LINUX`/`WINDOWS` define, and a single `#if` where `App` creates the
   device. Build OS = target OS anyway, since Native AOT can't cross-compile between OSes.
+
+## Build settings
+
+- `Directory.Build.props` holds the shared settings: `net11.0`, C# 15, nullable, implicit usings, `IsAotCompatible`
+  (trim/AOT/single-file analyzers) and warnings as errors, so any IL2xxx/IL3xxx warning fails the normal build.
+- csproj files keep only what is project-specific. `App` adds `PublishAot` and `InvariantGlobalization`.
+- Analyzers don't catch everything; the full check is a real publish in WSL:
+  `dotnet publish src/App -c Release -r linux-x64` (needs `clang` and `zlib` on Arch). Set `TrimmerSingleWarn=false`
+  to see individual warnings instead of one per assembly.
 
 ## Architecture constraints
 
