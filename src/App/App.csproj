@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Device.Linux\Device.Linux.csproj" />
   </ItemGroup>
 
 </Project>
