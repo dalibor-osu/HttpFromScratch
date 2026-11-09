@@ -3,7 +3,7 @@ using HttpFromScratch.Device.Linux.Enums;
 
 namespace HttpFromScratch.Device.Linux;
 
-internal static partial class Linux
+internal static partial class Libc
 {
     [LibraryImport("libc", EntryPoint = "open", SetLastError = true, StringMarshalling = StringMarshalling.Utf8)]
     public static partial int Open(string path, OpenFlags openFlags);
@@ -14,6 +14,13 @@ internal static partial class Linux
     [LibraryImport("libc", EntryPoint = "read", SetLastError = true)]
     public static partial nint Read(int fileDescriptor, Span<byte> buffer, nuint count);
 
+    [LibraryImport("libc", EntryPoint = "write", SetLastError = true)]
+    public static partial nint Write(int fileDescriptor, Span<byte> buffer, nuint count);
+
     [LibraryImport("libc", EntryPoint = "close", SetLastError = true)]
     public static partial int Close(int fileDescriptor);
+
+    [LibraryImport("libc", EntryPoint = "poll", SetLastError = true)]
+    public static partial void Poll([In, Out] PollFd[] pollFdArray, nuint pollFdCount, int timeout);
+
 }

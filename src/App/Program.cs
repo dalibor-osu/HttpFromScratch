@@ -1,15 +1,33 @@
-﻿using System.Text;
+﻿using System.Buffers;
+using System.Text;
 using HttpFromScratch.Common.Assertion;
 using HttpFromScratch.Device.Linux;
+using HttpFromScratch.Stack.Ip;
 
 var device = TunDevice.Open("tun0");
 
-var buffer = new Span<byte>(new byte[2048]);
+var readBuffer = new Span<byte>(new byte[2048]);
 while (true)
 {
-    int readResult = device.Read(buffer);
-    string dump = HexDump(buffer.Slice(0, readResult).ToArray());
+    int readResult = device.Read(readBuffer);
+    if (readResult < 0)
+    {
+        continue;
+    }
+
+    byte[] slice = readBuffer.Slice(0, readResult).ToArray();
+    string dump = HexDump(slice);
     Console.WriteLine(dump);
+    if (IpV4Header.TryParse(slice, out var header))
+    {
+        Console.WriteLine(header.ToString());
+        Console.WriteLine($"Header checksum: {header.Checksum:X}, Calculated checksum: {IpV4Header.CalculateChecksum(slice):X}");
+    }
+    else
+    {
+        Console.WriteLine("Failed to parse header");
+    }
+    Console.WriteLine("------------------------------------------");
 }
 
 // https://stackoverflow.com/questions/26206257/packet-dump-hex-view-format-for-byte-to-text-file
