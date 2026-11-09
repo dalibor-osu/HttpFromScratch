@@ -13,10 +13,17 @@ Learning topics with links: `docs/topics-to-learn.md`. Original: `docs/http-serv
 
 ## Current status
 
-- Phase 0. Projects from the structure below exist, mostly empty. `Common` has a debug-only `Assert`. The compile-time
-  device wiring in `App` is not set up yet.
-- Development is on Windows for now; the project is not yet set up for Linux. WSL2 with Arch Linux is ready, Rider still
-  needs to be installed there. The developer will do that later.
+- Phases 0-1 done: hexdump (in `App`), TUN device open (`TUNSETIFF`) and read, `ping` packets are printed.
+- Phase 2 in progress:
+  - `Device.Linux`: `Libc` bindings for `open`, `ioctl`, `read`, `close`, `poll` (`PollFd`, `PollEvents`).
+    `TunDevice` has `Wait(timeoutMs)` (poll), `ProcessIncoming()` (reads into an `ArrayPool` buffer, raises
+    `PacketEvent`) and a `SendIp` stub. No `write` binding yet.
+  - Not done: packet buffer with headroom, `NetIf` contract, event loop in `Stack` (`App` still runs its own read loop).
+- Phase 3 started: `Stack/Ip/IpV4Header` with `TryParse` and a header checksum. Planned: move the checksum to a generic
+  RFC 1071 helper in `Stack` (reused by ICMP/TCP), validate `TotalLength <= packet length`, protocol dispatch, output.
+- The compile-time device wiring in `App` is not set up yet (`App` references `Device.Linux` unconditionally).
+- Development environments: a Linux machine, and Windows with WSL2 (Arch Linux). Both are set up and working. On
+  Windows, the code lives in the WSL checkout (`~/repos/HttpFromScratch`).
 
 ## Key decisions
 
