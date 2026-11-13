@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
+using HttpFromScratch.Common.Results;
+using HttpFromScratch.Stack.Errors;
 
 namespace HttpFromScratch.Stack.Ip;
 
@@ -23,14 +25,21 @@ public struct IpV4Header
 
     public int HeaderByteLength => HeaderWordLength * 4;
 
-    public static bool TryParse(ReadOnlySpan<byte> packet, out IpV4Header value)
+    private static ushort _nextIdentification = 0;
+
+    public static Result<IpV4Header, IpHeaderParseError> Parse(ReadOnlySpan<byte> packet)
     {
         var result = new IpV4Header();
-        value = result;
-
         if (packet.Length < 20)
         {
-            return false;
+            return (IpHeaderParseError.InvalidPacketLength, "Packet is too short");
+        }
+
+        result.Version = (byte)(packet[0] >> 4);
+
+        if (result.Version != 4)
+        {
+            return IpHeaderParseError.InvalidVersion;
         }
 
         result.TotalLength = BinaryPrimitives.ReadUInt16BigEndian(packet[2..]);
@@ -39,14 +48,7 @@ public struct IpV4Header
         if (result.HeaderWordLength < 5 || result.HeaderByteLength > result.TotalLength ||
             packet.Length < result.HeaderByteLength)
         {
-            return false;
-        }
-
-        result.Version = (byte)(packet[0] >> 4);
-
-        if (result.Version != 4)
-        {
-            return false;
+            return IpHeaderParseError.InvalidHeaderLength;
         }
 
         result.TypeOfService = packet[1];
@@ -61,10 +63,38 @@ public struct IpV4Header
         result.Checksum = BinaryPrimitives.ReadUInt16BigEndian(packet[10..]);
         result.SourceAddress = BinaryPrimitives.ReadUInt32BigEndian(packet[12..]);
         result.DestinationAddress = BinaryPrimitives.ReadUInt32BigEndian(packet[16..]);
-        result.IsChecksumValid = CalculateChecksum(packet) == result.Checksum;
+        result.IsChecksumValid = CalculateChecksum(packet) == 0;
 
-        value = result;
-        return true;
+        return result;
+    }
+
+    public static IpV4Header ForData(uint destination, Protocol protocol, ReadOnlySpan<byte> data)
+    {
+        ushort identification = _nextIdentification;
+        unchecked
+        {
+            _nextIdentification++;
+        }
+
+        var header = new IpV4Header
+        {
+            Version = 4,
+            HeaderWordLength = 5,
+            TypeOfService = 0,
+            TotalLength = (ushort)(data.Length + 20),
+            FragmentationFlags = FragmentationFlags.NoFragment,
+            FragmentOffset = 0,
+            TimeToLive = 64,
+            Protocol = protocol,
+            SourceAddress = 0x0A_00_00_02,
+            DestinationAddress = destination,
+            Identification = identification,
+            Checksum = 0 // Explicitly set checksum to 0 just to be sure
+        };
+
+        byte[] bytes = header.GetBytes();
+        header.Checksum = CalculateChecksum(bytes);
+        return header;
     }
 
     public static ushort CalculateChecksum(ReadOnlySpan<byte> packet)
@@ -83,20 +113,25 @@ public struct IpV4Header
             throw new ArgumentException("Invalid packet", nameof(packet));
         }
 
-        ulong sum = 0;
-        for (int i = 0; i < headerByteLength; i += 2)
-        {
-            if (i == 10)
-            {
-                // Skip the checksum bytes
-                continue;
-            }
+        return ChecksumHelper.Calculate(packet, headerByteLength);
+    }
 
-            sum += BinaryPrimitives.ReadUInt16BigEndian(packet[i..]);
-        }
-
-        sum = (sum & 0xFFFF) + (sum >> 16);
-        return (ushort)~sum;
+    public byte[] GetBytes()
+    {
+        var buffer = new byte[HeaderByteLength].AsSpan();
+        buffer[0] = (byte)(Version << 4);
+        buffer[0] = (byte)(buffer[0] | HeaderWordLength);
+        buffer[1] = TypeOfService;
+        BinaryPrimitives.WriteUInt16BigEndian(buffer[2..], TotalLength);
+        BinaryPrimitives.WriteUInt16BigEndian(buffer[4..], Identification);
+        BinaryPrimitives.WriteUInt16BigEndian(buffer[6..], (ushort)(FragmentOffset & 0x1FFF));
+        buffer[6] = (byte)(buffer[6] | ((byte)FragmentationFlags << 5));
+        buffer[8] = TimeToLive;
+        buffer[9] = (byte)Protocol;
+        BinaryPrimitives.WriteUInt16BigEndian(buffer[10..], Checksum);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer[12..], SourceAddress);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer[16..], DestinationAddress);
+        return buffer.ToArray();
     }
 
     public override string ToString()

@@ -15,12 +15,12 @@ internal static partial class Libc
     public static partial nint Read(int fileDescriptor, Span<byte> buffer, nuint count);
 
     [LibraryImport("libc", EntryPoint = "write", SetLastError = true)]
-    public static partial nint Write(int fileDescriptor, Span<byte> buffer, nuint count);
+    public static partial nint Write(int fileDescriptor, ReadOnlySpan<byte> buffer, nuint count);
 
     [LibraryImport("libc", EntryPoint = "close", SetLastError = true)]
     public static partial int Close(int fileDescriptor);
 
     [LibraryImport("libc", EntryPoint = "poll", SetLastError = true)]
-    public static partial void Poll([In, Out] PollFd[] pollFdArray, nuint pollFdCount, int timeout);
+    public static partial int Poll([In, Out] PollFd[] pollFdArray, nuint pollFdCount, int timeout);
 
 }

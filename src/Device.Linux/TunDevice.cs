@@ -67,7 +67,8 @@ public sealed class TunDevice : IDisposable
         int readResult = Read(span);
         if (readResult > 0)
         {
-            PacketEvent?.Invoke(this, ref span);
+            var slice = span.Slice(0, readResult);
+            PacketEvent?.Invoke(this, ref slice);
         }
 
         ArrayPool<byte>.Shared.Return(buffer, true);
@@ -82,10 +83,7 @@ public sealed class TunDevice : IDisposable
         return polls[0].Revents.HasFlag(PollEvents.In);
     }
 
-    public void SendIp(int destination, ReadOnlySpan<byte> packet)
-    {
-        throw new NotImplementedException();
-    }
+    public bool SendIp(uint destination, ReadOnlySpan<byte> packet) => Libc.Write(_fileDescriptor, packet, (nuint)packet.Length) == packet.Length;
 
     public void Dispose()
     {
