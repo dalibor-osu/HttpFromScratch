@@ -11,7 +11,7 @@ public struct IcmpHeader
     public ushort Checksum;
     public uint OtherData;
 
-    public static Result<IcmpHeader, IcmpHeaderParseError> FromBytes(ReadOnlySpan<byte> bytes)
+    public static Result<IcmpHeader, IcmpHeaderParseError> Parse(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length < 8)
         {
@@ -25,5 +25,16 @@ public struct IcmpHeader
             Checksum = BinaryPrimitives.ReadUInt16BigEndian(bytes.Slice(2, 2)),
             OtherData = BinaryPrimitives.ReadUInt32BigEndian(bytes.Slice(4, 4))
         };
+    }
+
+    public byte[] GetBytes()
+    {
+        var buffer = new byte[8].AsSpan();
+
+        buffer[0] = (byte)Type;
+        buffer[1] = Code;
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(4, 4), OtherData);
+
+        return buffer.ToArray();
     }
 }

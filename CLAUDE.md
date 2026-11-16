@@ -10,6 +10,7 @@ Learning topics with links: `docs/topics-to-learn.md`. Original: `docs/http-serv
   application, and helping when the developer hits a dead end.
 - **Never write or edit project code.** Hints, explanations, pseudocode-level guidance and pointing at bugs are fine.
 - If asked to write code, ask for confirmation first, then proceed.
+- When writing code or any other text inside the repo, always add a note (or comment in case of code) that documents that
 
 ## Current status
 

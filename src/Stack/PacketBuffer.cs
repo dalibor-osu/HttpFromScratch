@@ -9,12 +9,24 @@ public sealed class PacketBuffer
 
     private readonly byte[] _buffer = new byte[BufferSize];
 
-    private int _start;
-    private int _end;
+    private int _start = DefaultHeadroomSize;
+    private int _end = DefaultHeadroomSize;
+
+    private PacketBuffer()
+    { }
+
+    public static PacketBuffer Instance
+    {
+        get
+        {
+            field ??= new PacketBuffer();
+            return field;
+        }
+    } = null;
 
     public int Start
     {
-        get;
+        get => _start;
         private set
         {
             Assert.That(value >= 0);
@@ -23,11 +35,11 @@ public sealed class PacketBuffer
 
             _start = value;
         }
-    } = DefaultHeadroomSize;
+    }
 
     public int End
     {
-        get;
+        get => _end;
         private set
         {
             Assert.That(value >= 0);
@@ -36,31 +48,65 @@ public sealed class PacketBuffer
 
             _end = value;
         }
-    } = DefaultHeadroomSize;
+    }
 
     public Span<byte> Data => _buffer.AsSpan()[Start..End];
     public int Length => End - Start;
 
     public Span<byte> Prepend(int n)
     {
-        Assert.That(n > 0);
+        Assert.That(n >= 0);
+        if (n == 0)
+        {
+            return Span<byte>.Empty;
+        }
+
         Start -= n;
 
         return _buffer.AsSpan()[Start..(Start + n)];
     }
 
+    public Span<byte> Prepend(ReadOnlySpan<byte> buffer)
+    {
+        if (buffer.Length == 0)
+        {
+            return Span<byte>.Empty;
+        }
+
+        var data = Prepend(buffer.Length);
+        buffer.CopyTo(data);
+        return data;
+    }
+
     public void Pull(int n)
     {
-        Assert.That(n > 0);
+        Assert.That(n >= 0);
         Start += n;
     }
 
     public Span<byte> Append(int n)
     {
-        Assert.That(n > 0);
+        Assert.That(n >= 0);
+        if (n == 0)
+        {
+            return Span<byte>.Empty;
+        }
+
         End += n;
 
         return _buffer.AsSpan()[(End - n)..End];
+    }
+
+    public Span<byte> Append(ReadOnlySpan<byte> buffer)
+    {
+        if (buffer.Length == 0)
+        {
+            return Span<byte>.Empty;
+        }
+
+        var data = Append(buffer.Length);
+        buffer.CopyTo(data);
+        return data;
     }
 
     public void Trim(int length)

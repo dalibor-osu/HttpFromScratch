@@ -51,19 +51,38 @@ public struct IpV4Header
             return IpHeaderParseError.InvalidHeaderLength;
         }
 
-        result.TypeOfService = packet[1];
-        result.Identification = BinaryPrimitives.ReadUInt16BigEndian(packet[4..]);
+        if (result.TotalLength > packet.Length)
+        {
+            return (IpHeaderParseError.InvalidPacketLength, "Packet is shorter than header says");
+        }
+
+        result.DestinationAddress = BinaryPrimitives.ReadUInt32BigEndian(packet[16..]);
+        if (result.DestinationAddress != 0xA_00_00_02)
+        {
+            return (IpHeaderParseError.InvalidDestination, $"Destination address is {result.DestinationAddress}");
+        }
 
         ushort flagsFragmentBytes = BinaryPrimitives.ReadUInt16BigEndian(packet[6..]);
         result.FragmentationFlags = (FragmentationFlags)(flagsFragmentBytes >> 13);
         result.FragmentOffset = (ushort)(flagsFragmentBytes & 0x1FFF);
 
+        if (result.FragmentationFlags.HasFlag(FragmentationFlags.MoreFragments) || result.FragmentOffset != 0)
+        {
+            return IpHeaderParseError.NotAFragment;
+        }
+
+        result.TypeOfService = packet[1];
+        result.Identification = BinaryPrimitives.ReadUInt16BigEndian(packet[4..]);
         result.TimeToLive = packet[8];
         result.Protocol = (Protocol)packet[9];
         result.Checksum = BinaryPrimitives.ReadUInt16BigEndian(packet[10..]);
         result.SourceAddress = BinaryPrimitives.ReadUInt32BigEndian(packet[12..]);
-        result.DestinationAddress = BinaryPrimitives.ReadUInt32BigEndian(packet[16..]);
         result.IsChecksumValid = CalculateChecksum(packet) == 0;
+
+        if (!result.IsChecksumValid)
+        {
+            return IpHeaderParseError.InvalidChecksum;
+        }
 
         return result;
     }

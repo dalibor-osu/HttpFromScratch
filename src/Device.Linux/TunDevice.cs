@@ -6,7 +6,7 @@ namespace HttpFromScratch.Device.Linux;
 
 public sealed class TunDevice : IDisposable
 {
-    public delegate void PacketEventHandler(object sender, ref Span<byte> packet);
+    public delegate void PacketEventHandler(TunDevice sender, ref Span<byte> packet);
 
     public event PacketEventHandler? PacketEvent;
 

@@ -5,4 +5,7 @@ public enum IpHeaderParseError
     InvalidPacketLength,
     InvalidHeaderLength,
     InvalidVersion,
+    InvalidChecksum,
+    InvalidDestination,
+    NotAFragment
 }
