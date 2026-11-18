@@ -4,40 +4,43 @@ Userspace TCP/IP stack on Linux via TUN, up to a working HTTP/1.1 server. Kernel
 your stack is `10.0.0.2`. Each phase ends with something testable. What to learn for each
 phase: [topics to learn](topics-to-learn.md).
 
-## Phase 0: Groundwork
+> Progress marks (✅ done, 🔶 partly done) were added by Claude (AI assistant), reflecting the code as of 2026-11-16.
 
-1. Set up the project and build tooling.
-2. Write a hexdump helper and the Internet checksum (RFC 1071, one's complement sum). IP, ICMP and TCP all use it.
-3. Get comfortable with `tcpdump -i tun0 -X` or Wireshark on `tun0`.
+## Phase 0: Groundwork ✅
 
-## Phase 1: TUN device
+1. ✅ Set up the project and build tooling.
+2. ✅ Write a hexdump helper and the Internet checksum (RFC 1071, one's complement sum). IP, ICMP and TCP all use it.
+3. ✅ Get comfortable with `tcpdump -i tun0 -X` or Wireshark on `tun0`.
 
-1. Create a persistent device once so you don't need root every run:
+## Phase 1: TUN device ✅
+
+1. ✅ Create a persistent device once so you don't need root every run:
    ```
    ip tuntap add dev tun0 mode tun user $USER
    ip addr add 10.0.0.1/24 dev tun0
    ip link set tun0 up
    ```
-2. Open `/dev/net/tun`, `ioctl(TUNSETIFF)` with `IFF_TUN | IFF_NO_PI` and name `tun0`.
-3. Read loop, hexdump everything.
+2. ✅ Open `/dev/net/tun`, `ioctl(TUNSETIFF)` with `IFF_TUN | IFF_NO_PI` and name `tun0`.
+3. ✅ Read loop, hexdump everything.
 
 > **Test:** `ping 10.0.0.2` prints packets.
 
 ## Phase 2: Structure
 
-1. Packet buffer type (byte slice + length, headroom for prepending headers on output).
+1. ✅ Packet buffer type (byte slice + length, headroom for prepending headers on output).
 2. `NetIf` abstraction with `send_ip` and a receive callback, so TAP can be added later without touching IP/TCP.
-3. Main event loop with `poll` on the TUN fd plus a timeout for timers.
+3. 🔶 Main event loop with `poll` on the TUN fd plus a timeout for timers. (Poll loop runs in `App`, not yet in `Stack`;
+   no timers.)
 
-## Phase 3: IPv4
+## Phase 3: IPv4 ✅
 
-1. Input: check version 4, IHL, total length vs bytes read, header checksum, destination is `10.0.0.2`. Drop fragments
+1. ✅ Input: check version 4, IHL, total length vs bytes read, header checksum, destination is `10.0.0.2`. Drop fragments
    (MF set or offset nonzero). Dispatch on protocol (1 ICMP, 6 TCP).
-2. Output: build header, incrementing ID, TTL 64, DF set, checksum.
+2. ✅ Output: build header, incrementing ID, TTL 64, DF set, checksum.
 
-## Phase 4: ICMP echo
+## Phase 4: ICMP echo ✅
 
-1. Type 8 in, type 0 out, same id/seq/payload, checksum over the whole ICMP message.
+1. ✅ Type 8 in, type 0 out, same id/seq/payload, checksum over the whole ICMP message.
 
 > **Test:** `ping 10.0.0.2` gets replies. First real milestone.
 
